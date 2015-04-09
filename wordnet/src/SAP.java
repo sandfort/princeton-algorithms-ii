@@ -2,11 +2,13 @@
  * A class representing the shortest ancestral path of two nodes in a digraph.
  */
 public class SAP {
+    private Digraph g;
+
     /**
      * @param g A digraph, not necessarily a DAG.
      */
     public SAP(Digraph g) {
-        // TODO implement
+        this.g = g;
     }
 
     /**
@@ -15,8 +17,20 @@ public class SAP {
      * @return the length, or -1 if there is no ancestral path.
      */
     public int length(int v, int w) {
-        // TODO implement
-        return 0;
+        BreadthFirstPaths searchV = new BreadthFirstPaths(g, v);
+        BreadthFirstPaths searchW = new BreadthFirstPaths(g, w);
+
+        int shortest = -1;
+        for (int s = 0; s < g.V(); ++s) {
+            if (searchV.hasPathTo(s) && searchW.hasPathTo(s)) {
+                int dist = searchV.distTo(s) + searchW.distTo(s);
+                if (shortest == -1 || dist < shortest) {
+                    shortest = dist;
+                }
+            }
+        }
+
+        return shortest;
     }
 
     /**
@@ -25,8 +39,22 @@ public class SAP {
      * @return the ID of the vertex, or -1 if there is no ancestral path.
      */
     public int ancestor(int v, int w) {
-        // TODO implement
-        return 0;
+        BreadthFirstPaths searchV = new BreadthFirstPaths(g, v);
+        BreadthFirstPaths searchW = new BreadthFirstPaths(g, w);
+
+        int shortest = Integer.MAX_VALUE;
+        int ancestor = -1;
+        for (int s = 0; s < g.V(); ++s) {
+            if (searchV.hasPathTo(s) && searchW.hasPathTo(s)) {
+                int dist = searchV.distTo(s) + searchW.distTo(s);
+                if (dist < shortest) {
+                    shortest = dist;
+                    ancestor = s;
+                }
+            }
+        }
+
+        return ancestor;
     }
 
     /**
