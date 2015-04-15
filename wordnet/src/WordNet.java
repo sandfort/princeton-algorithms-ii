@@ -1,15 +1,17 @@
 public class WordNet {
     // array of synsets by synset id
-    Synset[] sets;
+    private Synset[] sets;
 
     // number of synsets in this wordnet
-    int v;
+    private int v;
 
     // hypernym directed graph
-    Digraph net;
+    private Digraph net;
 
     // ST keyed by noun, values are a bag of synsets that the noun belongs to.
-    LinearProbingHashST<String, Bag<Integer>> nouns;
+    private LinearProbingHashST<String, Bag<Integer>> nouns;
+
+    private SAP sap;
 
     /**
      * Construct a WordNet given a list of synsets and their hypernym
@@ -52,9 +54,23 @@ public class WordNet {
             }
         }
 
-        if (!(new Topological(net).hasOrder())) {
+        // Check for cycles
+        if ((new DirectedCycle(net).hasCycle())) {
             throw new IllegalArgumentException();
         }
+
+        int roots = 0;
+        for (int site = 0; site < v; ++site) {
+            if (net.outdegree(site) == 0) {
+                ++roots;
+            }
+        }
+
+        if (roots != 1) {
+            throw new IllegalArgumentException();
+        }
+
+        this.sap = new SAP(net);
     }
 
     /**
@@ -79,7 +95,14 @@ public class WordNet {
         checkForNull(nounA);
         checkForNull(nounB);
 
-        return new SAP(net).length(nouns.get(nounA), nouns.get(nounB));
+        Iterable<Integer> synsetsA = nouns.get(nounA);
+        Iterable<Integer> synsetsB = nouns.get(nounB);
+
+        if (synsetsA == null || synsetsB == null) {
+            throw new IllegalArgumentException();
+        }
+
+        return sap.length(synsetsA, synsetsB);
     }
 
     /**
@@ -92,15 +115,12 @@ public class WordNet {
 
         Iterable<Integer> synsetsA = nouns.get(nounA);
         Iterable<Integer> synsetsB = nouns.get(nounB);
-        SAP sap = new SAP(net);
-        return sets[sap.ancestor(synsetsA, synsetsB)].nouns;
-    }
 
-    /**
-     * Unit tests.
-     */
-    public static void main(String[] args) {
-        WordNet wn = new WordNet(args[0], args[1]);
+        if (synsetsA == null || synsetsB == null) {
+            throw new IllegalArgumentException();
+        }
+
+        return sets[sap.ancestor(synsetsA, synsetsB)].nouns;
     }
 
     private void resize(int capacity) {
@@ -126,13 +146,10 @@ public class WordNet {
         }
     }
 
-    private void checkForCycles(Digraph g) {
-    }
-
-    static class Synset {
-        public int id;
-        public String nouns;
-        public String definition;
+    private static class Synset {
+        private int id;
+        private String nouns;
+        private String definition;
 
         public Synset(String line) {
             String[] fields = line.split(",");
@@ -140,6 +157,14 @@ public class WordNet {
             this.id = Integer.parseInt(fields[0]);
             this.nouns = fields[1];
             this.definition = fields[2];
+        }
+
+        public int id() {
+            return id;
+        }
+
+        public String[] nouns() {
+            return nouns.split(" ");
         }
 
         public String toString() {

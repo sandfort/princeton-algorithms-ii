@@ -24,7 +24,7 @@ public class Outcast {
             int dist = 0;
 
             for (String other : nouns) {
-                if (noun != other) {
+                if (!noun.equals(other)) {
                     dist += wordnet.distance(noun, other);
                 }
             }

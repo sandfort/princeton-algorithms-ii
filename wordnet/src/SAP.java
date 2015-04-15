@@ -8,7 +8,7 @@ public class SAP {
      * @param g A digraph, not necessarily a DAG.
      */
     public SAP(Digraph g) {
-        this.g = g;
+        this.g = new Digraph(g);
     }
 
     /**
