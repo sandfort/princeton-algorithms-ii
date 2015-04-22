@@ -1,33 +1,31 @@
 public class SeamCarver {
+    private Picture picture;
     /**
      * Create a seam carver object based on the given picture.
      */
     public SeamCarver(Picture picture) {
-        // TODO implement
+        this.picture = picture;
     }
 
     /**
      * The current picture.
      */
     public Picture picture() {
-        // TODO implement
-        return null;
+        return picture;
     }
 
     /**
      * The width of the current picture.
      */
     public int width() {
-        // TODO implement
-        return 0;
+        return picture.width();
     }
 
     /**
      * The height of the current picture.
      */
     public int height() {
-        // TODO implement
-        return 0;
+        return picture.height();
     }
 
     /**
