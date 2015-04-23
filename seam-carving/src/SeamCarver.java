@@ -41,6 +41,11 @@ public class SeamCarver {
      *  square of the y-gradient.
      */
     public double energy(int x, int y) {
+        if (x == 0 || y == 0 || 
+                x == picture.width()-1 ||
+                y == picture.height()-1) {
+            return BORDER_ENERGY;
+        }
         return squareOfXGradient(x, y) + squareOfYGradient(x, y);
     }
 
@@ -77,10 +82,6 @@ public class SeamCarver {
     }
 
     private double squareOfXGradient(int x, int y) {
-        if (x == 0 || x == picture.width() - 1) {
-            return BORDER_ENERGY;
-        }
-
         Color left  = picture.get(x - 1, y);
         Color right = picture.get(x + 1, y);
 
@@ -92,10 +93,6 @@ public class SeamCarver {
     }
 
     private double squareOfYGradient(int x, int y) {
-        if (y == 0 || y == picture.height() - 1) {
-            return BORDER_ENERGY;
-        }
-
         Color top    = picture.get(x, y - 1);
         Color bottom = picture.get(x, y + 1);
 
