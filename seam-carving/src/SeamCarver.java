@@ -2,6 +2,10 @@ import java.awt.Color;
 
 import static java.lang.Math.*;
 
+/**
+ * i = x = horizontal = width
+ * j = y = vertical   = height
+ */
 public class SeamCarver {
     private Picture picture;
     private final static int BORDER_ENERGY = 195075;
@@ -51,6 +55,8 @@ public class SeamCarver {
 
     /**
      * The sequence of indices for the horizontal seam.
+     *
+     * Use findVerticalSeam() to implement this.
      */
     public int[] findHorizontalSeam() {
         // TODO implement
@@ -59,10 +65,53 @@ public class SeamCarver {
 
     /**
      * The sequence of indices for the vertical seam.
+     *
+     * Make sure you understand the topological sort algorithm for computing a
+     * DAG. Do not create an EdgeWeightedDigraph. Instead, construct a 2D energy
+     * array using the energy() method. You can traverse this matrix treating
+     * some entries as reachable from (x, y) to calculate where the seam is
+     * located.
+     *
+     * Test with the PrintSeams client.
      */
     public int[] findVerticalSeam() {
-        // TODO implement
+        double[][] energy = new double[picture.width()][picture.height()];
+        for (int j = 0; j < picture.height(); ++j) {
+            for (int i = 0; i < picture.width(); ++i) {
+                energy[j][i] = energy(i, j);
+            }
+        }
+
+        Iterable<Pixel> s = topological();
+
+        // TODO actually find the shortest path!
         return new int[]{};
+    }
+
+    private Iterable<Pixel> topological() {
+        boolean[][] marked = new boolean[picture.height()][picture.width()];
+        Stack<Pixel> s = new Stack<Pixel>();
+
+        for (int j = 0; j < picture.height(); ++j) {
+            for (int i = 0; i < picture.width(); ++i) {
+                if (!marked[j][i]) {
+                    dfs(s, marked, new Pixel(i, j));
+                }
+            }
+        }
+
+        return s;
+    }
+
+    private void dfs(Stack<Pixel> s, boolean[][] marked, Pixel v) {
+        marked[v.y()][v.x()] = true;
+        for (Pixel w : adj(v)) {
+            if (!marked[w.y()][w.x()]) {
+                dfs(s, marked, w);
+            }
+        }
+
+        s.push(v);
     }
 
     /**
@@ -103,5 +152,41 @@ public class SeamCarver {
         return red + green + blue;
     }
 
+    private Iterable<Pixel> adj(Pixel p) {
+        Stack<Pixel> adj = new Stack<Pixel>();
+        int x = p.x();
+        int y = p.y();
+        if (p.y() < picture.height()) {
+            adj.push(new Pixel(x, y + 1));
+
+            if (p.x() > 0) {
+                adj.push(new Pixel(x - 1, y + 1));
+            }
+
+            if (p.x() < picture.width()) {
+                adj.push(new Pixel(x + 1, y + 1));
+            }
+        }
+
+        return adj;
+    }
+
+    public static class Pixel {
+        private int x;
+        private int y;
+
+        public Pixel(int x, int y) {
+            this.x = x;
+            this.y = y;
+        }
+
+        public int x() {
+            return x;
+        }
+
+        public int y() {
+            return y;
+        }
+    }
 }
 
