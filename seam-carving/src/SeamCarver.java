@@ -45,8 +45,7 @@ public class SeamCarver {
      *  square of the y-gradient.
      */
     public double energy(int x, int y) {
-        if (x == 0 || y == 0 || 
-                x == picture.width()-1 ||
+        if (x == 0 || y == 0 || x == picture.width()-1 ||
                 y == picture.height()-1) {
             return BORDER_ENERGY;
         }
@@ -76,6 +75,7 @@ public class SeamCarver {
      */
     public int[] findVerticalSeam() {
         double[][] energy = new double[picture.width()][picture.height()];
+
         for (int j = 0; j < picture.height(); ++j) {
             for (int i = 0; i < picture.width(); ++i) {
                 energy[j][i] = energy(i, j);
@@ -86,32 +86,6 @@ public class SeamCarver {
 
         // TODO actually find the shortest path!
         return new int[]{};
-    }
-
-    private Iterable<Pixel> topological() {
-        boolean[][] marked = new boolean[picture.height()][picture.width()];
-        Stack<Pixel> s = new Stack<Pixel>();
-
-        for (int j = 0; j < picture.height(); ++j) {
-            for (int i = 0; i < picture.width(); ++i) {
-                if (!marked[j][i]) {
-                    dfs(s, marked, new Pixel(i, j));
-                }
-            }
-        }
-
-        return s;
-    }
-
-    private void dfs(Stack<Pixel> s, boolean[][] marked, Pixel v) {
-        marked[v.y()][v.x()] = true;
-        for (Pixel w : adj(v)) {
-            if (!marked[w.y()][w.x()]) {
-                dfs(s, marked, w);
-            }
-        }
-
-        s.push(v);
     }
 
     /**
@@ -131,23 +105,23 @@ public class SeamCarver {
     }
 
     private double squareOfXGradient(int x, int y) {
-        Color left  = picture.get(x - 1, y);
+        Color left = picture.get(x - 1, y);
         Color right = picture.get(x + 1, y);
 
-        double red   = pow(abs(left.getRed()   - right.getRed()),   2);
+        double red = pow(abs(left.getRed() - right.getRed()), 2);
         double green = pow(abs(left.getGreen() - right.getGreen()), 2);
-        double blue  = pow(abs(left.getBlue()  - right.getBlue()),  2);
+        double blue = pow(abs(left.getBlue() - right.getBlue()), 2);
 
         return red + green + blue;
     }
 
     private double squareOfYGradient(int x, int y) {
-        Color top    = picture.get(x, y - 1);
+        Color top = picture.get(x, y - 1);
         Color bottom = picture.get(x, y + 1);
 
-        double red   = pow(abs(top.getRed()   - bottom.getRed()),   2);
+        double red = pow(abs(top.getRed() - bottom.getRed()), 2);
         double green = pow(abs(top.getGreen() - bottom.getGreen()), 2);
-        double blue  = pow(abs(top.getBlue()  - bottom.getBlue()),  2);
+        double blue = pow(abs(top.getBlue() - bottom.getBlue()), 2);
 
         return red + green + blue;
     }
@@ -169,6 +143,31 @@ public class SeamCarver {
         }
 
         return adj;
+    }
+
+    private Iterable<Pixel> topological() {
+        boolean[][] marked = new boolean[picture.height()][picture.width()];
+        Stack<Pixel> s = new Stack<Pixel>();
+
+        // Find paths from top row only.
+        for (int i = 0; i < picture.width(); ++i) {
+            if (!marked[0][i]) {
+                dfs(s, marked, new Pixel(i, 0));
+            }
+        }
+
+        return s;
+    }
+
+    private void dfs(Stack<Pixel> s, boolean[][] marked, Pixel v) {
+        marked[v.y()][v.x()] = true;
+        for (Pixel w : adj(v)) {
+            if (!marked[w.y()][w.x()]) {
+                dfs(s, marked, w);
+            }
+        }
+
+        s.push(v);
     }
 
     public static class Pixel {
