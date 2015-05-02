@@ -7,20 +7,29 @@ import static java.lang.Math.*;
  * j = y = vertical   = height
  */
 public class SeamCarver {
-    private Picture picture;
     private final static int BORDER_ENERGY = 195075;
+
+    private Picture picture;
+    private double[][] energy;
+    private boolean transposed;
 
     /**
      * Create a seam carver object based on the given picture.
      */
     public SeamCarver(Picture picture) {
-        this.picture = picture;
+        this.picture = new Picture(picture);
+        this.energy = energyMatrix();
+        this.transposed = false;
     }
 
     /**
      * The current picture.
      */
     public Picture picture() {
+        if (transposed) {
+            transpose();
+        }
+
         return picture;
     }
 
@@ -28,6 +37,10 @@ public class SeamCarver {
      * The width of the current picture.
      */
     public int width() {
+        if (transposed) {
+            return picture.height();
+        }
+
         return picture.width();
     }
 
@@ -35,6 +48,10 @@ public class SeamCarver {
      * The height of the current picture.
      */
     public int height() {
+        if (transposed) {
+            return picture.width();
+        }
+
         return picture.height();
     }
 
@@ -45,47 +62,75 @@ public class SeamCarver {
      *  square of the y-gradient.
      */
     public double energy(int x, int y) {
-        if (x == 0 || y == 0 || x == picture.width()-1 ||
-                y == picture.height()-1) {
-            return BORDER_ENERGY;
+        if (transposed) {
+            int t = x;
+            x = y;
+            y = t;
         }
-        return squareOfXGradient(x, y) + squareOfYGradient(x, y);
+
+        return energy[y][x];
     }
 
     /**
      * The sequence of indices for the horizontal seam.
-     *
-     * Use findVerticalSeam() to implement this.
      */
     public int[] findHorizontalSeam() {
-        // TODO implement
-        return new int[]{};
+        if (!transposed) {
+            transpose();
+        }
+
+        return findSeam();
     }
 
     /**
      * The sequence of indices for the vertical seam.
-     *
-     * Make sure you understand the topological sort algorithm for computing a
-     * DAG. Do not create an EdgeWeightedDigraph. Instead, construct a 2D energy
-     * array using the energy() method. You can traverse this matrix treating
-     * some entries as reachable from (x, y) to calculate where the seam is
-     * located.
-     *
-     * Test with the PrintSeams client.
      */
     public int[] findVerticalSeam() {
-        double[][] energy = new double[picture.width()][picture.height()];
+        if (transposed) {
+            transpose();
+        }
+        
+        return findSeam();
+    }
 
-        for (int j = 0; j < picture.height(); ++j) {
+    private int[] findSeam() {
+        Iterable<Pixel> s = topological();
+
+        Pixel[][] edgeTo = new Pixel[picture.height()][picture.width()];
+        double[][] distTo = new double[picture.height()][picture.width()];
+        for (int i = 0; i < picture.width(); ++i) {
+            distTo[0][i] = 0.0;
+        }
+        for (int j = 1; j < picture.height(); ++j) {
             for (int i = 0; i < picture.width(); ++i) {
-                energy[j][i] = energy(i, j);
+                distTo[j][i] = Double.POSITIVE_INFINITY;
             }
         }
 
-        Iterable<Pixel> s = topological();
+        // relax vertices in topological order
+        for (Pixel v : s) {
+            relax(edgeTo, distTo, v);
+        }
 
-        // TODO actually find the shortest path!
-        return new int[]{};
+        double shortest = Double.POSITIVE_INFINITY;
+        Pixel seamEnd = null;
+        int j = picture.height() - 1;
+        for (int i = 0; i < picture.width(); ++i) {
+            if (distTo[j][i] < shortest) {
+                seamEnd = new Pixel(i, j, energy[j][i]);
+                shortest = distTo[j][i];
+            }
+        }
+
+        int[] seam = new int[picture.height()];
+        int cut = seamEnd.x();
+        while (j > 0) {
+            seam[j] = cut;
+            cut = edgeTo[j--][cut].x();
+        }
+        seam[0] = cut;
+
+        return seam;
     }
 
     /**
@@ -102,6 +147,15 @@ public class SeamCarver {
     public void removeVerticalSeam(int[] seam) {
         // TODO implement
         return;
+    }
+
+    private void relax(Pixel[][] edgeTo, double[][] distTo, Pixel v) {
+        for (Pixel w : adj(v)) {
+            if (distTo[w.y()][w.x()] > distTo[v.y()][v.x()] + v.energy()) {
+                distTo[w.y()][w.x()] = distTo[v.y()][v.x()] + v.energy();
+                edgeTo[w.y()][w.x()] = v;
+            }
+        }
     }
 
     private double squareOfXGradient(int x, int y) {
@@ -130,15 +184,15 @@ public class SeamCarver {
         Stack<Pixel> adj = new Stack<Pixel>();
         int x = p.x();
         int y = p.y();
-        if (p.y() < picture.height()) {
-            adj.push(new Pixel(x, y + 1));
+        if (p.y() < picture.height() - 1) {
+            adj.push(new Pixel(x, y + 1, energy[y+1][x]));
 
             if (p.x() > 0) {
-                adj.push(new Pixel(x - 1, y + 1));
+                adj.push(new Pixel(x - 1, y + 1, energy[y+1][x-1]));
             }
 
-            if (p.x() < picture.width()) {
-                adj.push(new Pixel(x + 1, y + 1));
+            if (p.x() < picture.width() - 1) {
+                adj.push(new Pixel(x + 1, y + 1, energy[y+1][x+1]));
             }
         }
 
@@ -149,10 +203,9 @@ public class SeamCarver {
         boolean[][] marked = new boolean[picture.height()][picture.width()];
         Stack<Pixel> s = new Stack<Pixel>();
 
-        // Find paths from top row only.
         for (int i = 0; i < picture.width(); ++i) {
             if (!marked[0][i]) {
-                dfs(s, marked, new Pixel(i, 0));
+                dfs(s, marked, new Pixel(i, 0, energy[0][i]));
             }
         }
 
@@ -170,13 +223,47 @@ public class SeamCarver {
         s.push(v);
     }
 
-    public static class Pixel {
+    private void transpose() {
+        Picture t = new Picture(picture.height(), picture.width());
+        for (int j = 0; j < picture.width(); ++j) {
+            for (int i = 0; i < picture.height(); ++i) {
+                t.set(i, j, picture.get(j, i));
+            }
+        }
+        picture = t;
+        energy = energyMatrix();
+        transposed = !transposed;
+    }
+
+    private double calculateEnergy(int x, int y) {
+        if (x == 0 || y == 0 || x == picture.width()-1 ||
+                y == picture.height()-1) {
+            return BORDER_ENERGY;
+        }
+        return squareOfXGradient(x, y) + squareOfYGradient(x, y);
+    }
+
+    private double[][] energyMatrix() {
+        double[][] energy = new double[picture.height()][picture.width()];
+
+        for (int j = 0; j < picture.height(); ++j) {
+            for (int i = 0; i < picture.width(); ++i) {
+                energy[j][i] = calculateEnergy(i, j);
+            }
+        }
+
+        return energy;
+    }
+
+    private class Pixel {
         private int x;
         private int y;
+        private double energy;
 
-        public Pixel(int x, int y) {
+        public Pixel(int x, int y, double energy) {
             this.x = x;
             this.y = y;
+            this.energy = energy;
         }
 
         public int x() {
@@ -185,6 +272,14 @@ public class SeamCarver {
 
         public int y() {
             return y;
+        }
+
+        public double energy() {
+            return energy;
+        }
+
+        public String toString() {
+            return String.format("(%d, %d)", x, y);
         }
     }
 }
