@@ -7,7 +7,7 @@ import static java.lang.Math.*;
  * j = y = vertical   = height
  */
 public class SeamCarver {
-    private final static int BORDER_ENERGY = 195075;
+    private static final int BORDER_ENERGY = 195075;
 
     private double[][] energy;
     private int[][] colors;
@@ -63,9 +63,7 @@ public class SeamCarver {
      */
     public double energy(int x, int y) {
         if (transposed) {
-            int t = x;
-            x = y;
-            y = t;
+            return energy[x][y];
         }
 
         return energy[y][x];
@@ -119,6 +117,10 @@ public class SeamCarver {
      * Assumes a vertical seam.
      */
     private void removeSeam(int[] seam) {
+        if (seam.length != colors.length) {
+            throw new IllegalArgumentException();
+        }
+
         for (int j = 0; j < colors.length; ++j) {
             colors[j] = removeElement(colors[j], seam[j]);
         }
@@ -134,27 +136,27 @@ public class SeamCarver {
     }
 
     private int[][] getColors(Picture p) {
-        int[][] colors = new int[p.height()][p.width()];
+        int[][] c = new int[p.height()][p.width()];
         for (int j = 0; j < p.height(); ++j) {
             for (int i = 0; i < p.width(); ++i) {
-                colors[j][i] = p.get(i, j).getRGB();
+                c[j][i] = p.get(i, j).getRGB();
             }
         }
 
-        return colors;
+        return c;
     }
 
     /**
      * Assumes rows are all the same length.
      */
-    private Picture buildPicture(int[][] colors) {
-        int height = colors.length;
-        int width = colors[0].length;
+    private Picture buildPicture(int[][] c) {
+        int height = c.length;
+        int width = c[0].length;
         Picture p = new Picture(width, height);
 
         for (int j = 0; j < height; ++j) {
             for (int i = 0; i < width; ++i) {
-                p.set(i, j, new Color(colors[j][i]));
+                p.set(i, j, new Color(c[j][i]));
             }
         }
 
@@ -250,23 +252,23 @@ public class SeamCarver {
     }
 
     private double calculateEnergy(int x, int y) {
-        if (x == 0 || y == 0 || x == colors[0].length-1 ||
-                y == colors.length-1) {
+        if (x == 0 || y == 0 || x == colors[0].length-1
+                || y == colors.length-1) {
             return BORDER_ENERGY;
         }
         return squareOfXGradient(x, y) + squareOfYGradient(x, y);
     }
 
     private double[][] energyMatrix() {
-        double[][] energy = new double[colors.length][colors[0].length];
+        double[][] e = new double[colors.length][colors[0].length];
 
         for (int j = 0; j < colors.length; ++j) {
             for (int i = 0; i < colors[0].length; ++i) {
-                energy[j][i] = calculateEnergy(i, j);
+                e[j][i] = calculateEnergy(i, j);
             }
         }
 
-        return energy;
+        return e;
     }
 
     private int[] findSeam() {
