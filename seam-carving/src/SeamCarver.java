@@ -9,7 +9,6 @@ import static java.lang.Math.*;
 public class SeamCarver {
     private final static int BORDER_ENERGY = 195075;
 
-    private Picture picture;
     private double[][] energy;
     private int[][] colors;
     private boolean transposed;
@@ -18,7 +17,6 @@ public class SeamCarver {
      * Create a seam carver object based on the given picture.
      */
     public SeamCarver(Picture picture) {
-        this.picture = new Picture(picture);
         this.colors = getColors(picture);
         this.energy = energyMatrix();
         this.transposed = false;
@@ -32,7 +30,7 @@ public class SeamCarver {
             transpose();
         }
 
-        return picture;
+        return buildPicture(colors);
     }
 
     /**
@@ -40,10 +38,10 @@ public class SeamCarver {
      */
     public int width() {
         if (transposed) {
-            return picture.height();
+            return colors.length;
         }
 
-        return picture.width();
+        return colors[0].length;
     }
 
     /**
@@ -51,10 +49,10 @@ public class SeamCarver {
      */
     public int height() {
         if (transposed) {
-            return picture.width();
+            return colors[0].length;
         }
 
-        return picture.height();
+        return colors.length;
     }
 
     /**
@@ -121,11 +119,9 @@ public class SeamCarver {
      * Assumes a vertical seam.
      */
     private void removeSeam(int[] seam) {
-        int[][] colors = getColors(picture);
-        for (int j = 0; j < picture.height(); ++j) {
+        for (int j = 0; j < colors.length; ++j) {
             colors[j] = removeElement(colors[j], seam[j]);
         }
-        picture = buildPicture(colors);
         energy = energyMatrix();
     }
 
@@ -175,8 +171,8 @@ public class SeamCarver {
     }
 
     private double squareOfXGradient(int x, int y) {
-        Color left = picture.get(x - 1, y);
-        Color right = picture.get(x + 1, y);
+        Color left = new Color(colors[y][x-1]);
+        Color right = new Color(colors[y][x+1]);
 
         double red = pow(abs(left.getRed() - right.getRed()), 2);
         double green = pow(abs(left.getGreen() - right.getGreen()), 2);
@@ -186,8 +182,8 @@ public class SeamCarver {
     }
 
     private double squareOfYGradient(int x, int y) {
-        Color top = picture.get(x, y - 1);
-        Color bottom = picture.get(x, y + 1);
+        Color top = new Color(colors[y-1][x]);
+        Color bottom = new Color(colors[y+1][x]);
 
         double red = pow(abs(top.getRed() - bottom.getRed()), 2);
         double green = pow(abs(top.getGreen() - bottom.getGreen()), 2);
@@ -200,14 +196,14 @@ public class SeamCarver {
         Stack<Pixel> adj = new Stack<Pixel>();
         int x = p.x();
         int y = p.y();
-        if (p.y() < picture.height() - 1) {
+        if (p.y() < colors.length - 1) {
             adj.push(new Pixel(x, y + 1, energy[y+1][x]));
 
             if (p.x() > 0) {
                 adj.push(new Pixel(x - 1, y + 1, energy[y+1][x-1]));
             }
 
-            if (p.x() < picture.width() - 1) {
+            if (p.x() < colors[0].length - 1) {
                 adj.push(new Pixel(x + 1, y + 1, energy[y+1][x+1]));
             }
         }
@@ -216,10 +212,10 @@ public class SeamCarver {
     }
 
     private Iterable<Pixel> topological() {
-        boolean[][] marked = new boolean[picture.height()][picture.width()];
+        boolean[][] marked = new boolean[colors.length][colors[0].length];
         Stack<Pixel> s = new Stack<Pixel>();
 
-        for (int i = 0; i < picture.width(); ++i) {
+        for (int i = 0; i < colors[0].length; ++i) {
             if (!marked[0][i]) {
                 dfs(s, marked, new Pixel(i, 0, energy[0][i]));
             }
@@ -240,40 +236,32 @@ public class SeamCarver {
     }
 
     private void transpose() {
-        Picture t = new Picture(picture.height(), picture.width());
-        for (int j = 0; j < picture.width(); ++j) {
-            for (int i = 0; i < picture.height(); ++i) {
-                t.set(i, j, picture.get(j, i));
-            }
-        }
-
-        int[][] tc = new int[colors[0].length][colors.length];
+        int[][] t = new int[colors[0].length][colors.length];
         for (int j = 0; j < colors.length; ++j) {
             for (int i = 0; i < colors[0].length; ++i) {
-                tc[i][j] = colors[j][i];
+                t[i][j] = colors[j][i];
             }
         }
 
-        picture = t;
-        colors = tc;
+        colors = t;
         energy = energyMatrix();
         transposed = !transposed;
         
     }
 
     private double calculateEnergy(int x, int y) {
-        if (x == 0 || y == 0 || x == picture.width()-1 ||
-                y == picture.height()-1) {
+        if (x == 0 || y == 0 || x == colors[0].length-1 ||
+                y == colors.length-1) {
             return BORDER_ENERGY;
         }
         return squareOfXGradient(x, y) + squareOfYGradient(x, y);
     }
 
     private double[][] energyMatrix() {
-        double[][] energy = new double[picture.height()][picture.width()];
+        double[][] energy = new double[colors.length][colors[0].length];
 
-        for (int j = 0; j < picture.height(); ++j) {
-            for (int i = 0; i < picture.width(); ++i) {
+        for (int j = 0; j < colors.length; ++j) {
+            for (int i = 0; i < colors[0].length; ++i) {
                 energy[j][i] = calculateEnergy(i, j);
             }
         }
@@ -284,13 +272,13 @@ public class SeamCarver {
     private int[] findSeam() {
         Iterable<Pixel> s = topological();
 
-        Pixel[][] edgeTo = new Pixel[picture.height()][picture.width()];
-        double[][] distTo = new double[picture.height()][picture.width()];
-        for (int i = 0; i < picture.width(); ++i) {
+        Pixel[][] edgeTo = new Pixel[colors.length][colors[0].length];
+        double[][] distTo = new double[colors.length][colors[0].length];
+        for (int i = 0; i < colors[0].length; ++i) {
             distTo[0][i] = 0.0;
         }
-        for (int j = 1; j < picture.height(); ++j) {
-            for (int i = 0; i < picture.width(); ++i) {
+        for (int j = 1; j < colors.length; ++j) {
+            for (int i = 0; i < colors[0].length; ++i) {
                 distTo[j][i] = Double.POSITIVE_INFINITY;
             }
         }
@@ -302,15 +290,15 @@ public class SeamCarver {
 
         double shortest = Double.POSITIVE_INFINITY;
         Pixel seamEnd = null;
-        int j = picture.height() - 1;
-        for (int i = 0; i < picture.width(); ++i) {
+        int j = colors.length - 1;
+        for (int i = 0; i < colors[0].length; ++i) {
             if (distTo[j][i] < shortest) {
                 seamEnd = new Pixel(i, j, energy[j][i]);
                 shortest = distTo[j][i];
             }
         }
 
-        int[] seam = new int[picture.height()];
+        int[] seam = new int[colors.length];
         int cut = seamEnd.x();
         while (j > 0) {
             seam[j] = cut;
