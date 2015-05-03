@@ -11,6 +11,7 @@ public class SeamCarver {
 
     private Picture picture;
     private double[][] energy;
+    private int[][] colors;
     private boolean transposed;
 
     /**
@@ -18,6 +19,7 @@ public class SeamCarver {
      */
     public SeamCarver(Picture picture) {
         this.picture = new Picture(picture);
+        this.colors = getColors(picture);
         this.energy = energyMatrix();
         this.transposed = false;
     }
@@ -93,60 +95,74 @@ public class SeamCarver {
         return findSeam();
     }
 
-    private int[] findSeam() {
-        Iterable<Pixel> s = topological();
-
-        Pixel[][] edgeTo = new Pixel[picture.height()][picture.width()];
-        double[][] distTo = new double[picture.height()][picture.width()];
-        for (int i = 0; i < picture.width(); ++i) {
-            distTo[0][i] = 0.0;
-        }
-        for (int j = 1; j < picture.height(); ++j) {
-            for (int i = 0; i < picture.width(); ++i) {
-                distTo[j][i] = Double.POSITIVE_INFINITY;
-            }
-        }
-
-        // relax vertices in topological order
-        for (Pixel v : s) {
-            relax(edgeTo, distTo, v);
-        }
-
-        double shortest = Double.POSITIVE_INFINITY;
-        Pixel seamEnd = null;
-        int j = picture.height() - 1;
-        for (int i = 0; i < picture.width(); ++i) {
-            if (distTo[j][i] < shortest) {
-                seamEnd = new Pixel(i, j, energy[j][i]);
-                shortest = distTo[j][i];
-            }
-        }
-
-        int[] seam = new int[picture.height()];
-        int cut = seamEnd.x();
-        while (j > 0) {
-            seam[j] = cut;
-            cut = edgeTo[j--][cut].x();
-        }
-        seam[0] = cut;
-
-        return seam;
-    }
-
     /**
      * Remove the given horizontal seam from the current picture.
      */
     public void removeHorizontalSeam(int[] seam) {
-        // TODO implement
-        return;
+        if (!transposed) {
+            transpose();
+        }
+
+        removeSeam(seam);
     }
 
     /**
      * Remove the given vertical seam from the current picture.
      */
     public void removeVerticalSeam(int[] seam) {
-        // TODO implement
-        return;
+        if (transposed) {
+            transpose();
+        }
+
+        removeSeam(seam);
+    }
+
+    /**
+     * Assumes a vertical seam.
+     */
+    private void removeSeam(int[] seam) {
+        int[][] colors = getColors(picture);
+        for (int j = 0; j < picture.height(); ++j) {
+            colors[j] = removeElement(colors[j], seam[j]);
+        }
+        picture = buildPicture(colors);
+        energy = energyMatrix();
+    }
+
+    private int[] removeElement(int[] a, int e) {
+        int[] b = new int[a.length - 1];
+        System.arraycopy(a, 0, b, 0, e);
+        System.arraycopy(a, e + 1, b, e, b.length - e);
+
+        return b;
+    }
+
+    private int[][] getColors(Picture p) {
+        int[][] colors = new int[p.height()][p.width()];
+        for (int j = 0; j < p.height(); ++j) {
+            for (int i = 0; i < p.width(); ++i) {
+                colors[j][i] = p.get(i, j).getRGB();
+            }
+        }
+
+        return colors;
+    }
+
+    /**
+     * Assumes rows are all the same length.
+     */
+    private Picture buildPicture(int[][] colors) {
+        int height = colors.length;
+        int width = colors[0].length;
+        Picture p = new Picture(width, height);
+
+        for (int j = 0; j < height; ++j) {
+            for (int i = 0; i < width; ++i) {
+                p.set(i, j, new Color(colors[j][i]));
+            }
+        }
+
+        return p;
     }
 
     private void relax(Pixel[][] edgeTo, double[][] distTo, Pixel v) {
@@ -230,9 +246,19 @@ public class SeamCarver {
                 t.set(i, j, picture.get(j, i));
             }
         }
+
+        int[][] tc = new int[colors[0].length][colors.length];
+        for (int j = 0; j < colors.length; ++j) {
+            for (int i = 0; i < colors[0].length; ++i) {
+                tc[i][j] = colors[j][i];
+            }
+        }
+
         picture = t;
+        colors = tc;
         energy = energyMatrix();
         transposed = !transposed;
+        
     }
 
     private double calculateEnergy(int x, int y) {
@@ -253,6 +279,46 @@ public class SeamCarver {
         }
 
         return energy;
+    }
+
+    private int[] findSeam() {
+        Iterable<Pixel> s = topological();
+
+        Pixel[][] edgeTo = new Pixel[picture.height()][picture.width()];
+        double[][] distTo = new double[picture.height()][picture.width()];
+        for (int i = 0; i < picture.width(); ++i) {
+            distTo[0][i] = 0.0;
+        }
+        for (int j = 1; j < picture.height(); ++j) {
+            for (int i = 0; i < picture.width(); ++i) {
+                distTo[j][i] = Double.POSITIVE_INFINITY;
+            }
+        }
+
+        // relax vertices in topological order
+        for (Pixel v : s) {
+            relax(edgeTo, distTo, v);
+        }
+
+        double shortest = Double.POSITIVE_INFINITY;
+        Pixel seamEnd = null;
+        int j = picture.height() - 1;
+        for (int i = 0; i < picture.width(); ++i) {
+            if (distTo[j][i] < shortest) {
+                seamEnd = new Pixel(i, j, energy[j][i]);
+                shortest = distTo[j][i];
+            }
+        }
+
+        int[] seam = new int[picture.height()];
+        int cut = seamEnd.x();
+        while (j > 0) {
+            seam[j] = cut;
+            cut = edgeTo[j--][cut].x();
+        }
+        seam[0] = cut;
+
+        return seam;
     }
 
     private class Pixel {
