@@ -2,6 +2,13 @@
  * Create a baseball division from given filename in format specified below.
  */
 public class BaseballElimination {
+    private int n;      // number of teams
+    private int[] w;    // wins for each team
+    private int[] l;    // losses for each team
+    private int[] r;    // remaining games for each team
+    private int[][] g;  // remaining games for each team against each other team
+    private SeparateChainingHashST<String, Integer> teams;
+
     /**
      * Create a baseball division from given filename in the format specified
      * below.
@@ -13,55 +20,67 @@ public class BaseballElimination {
      * against each team in the division.
      */
     public BaseballElimination(String filename) {
-        // TODO implement
+        In in = new In(filename);
+
+        this.n = in.readInt();
+        this.w = new int[n];
+        this.l = new int[n];
+        this.r = new int[n];
+        this.g = new int[n][n];
+        this.teams = new SeparateChainingHashST<String, Integer>(n);
+
+        for (int i = 0; i < n; ++i) {
+            String team = in.readString();
+            teams.put(team, i);
+            w[i] = in.readInt();
+            l[i] = in.readInt();
+            r[i] = in.readInt();
+            for (int j = 0; j < n; ++j) {
+                g[i][j] = in.readInt();
+            }
+        }
     }
 
     /**
      * The number of teams in the division.
      */
     public int numberOfTeams() {
-        // TODO implement
-        return 0;
+        return n;
     }
 
     /**
      * All teams in the division.
      */
     public Iterable<String> teams() {
-        // TODO implement
-        return null;
+        return teams.keys();
     }
 
     /**
      * Number of wins for the given team.
      */
     public int wins(String team) {
-        // TODO implement
-        return 0;
+        return w[teams.get(team)];
     }
 
     /**
      * Number of losses for the given team.
      */
     public int losses(String team) {
-        // TODO implement
-        return 0;
+        return l[teams.get(team)];
     }
 
     /**
      * Number of remaining games for the given team.
      */
     public int remaining(String team) {
-        // TODO implement
-        return 0;
+        return r[teams.get(team)];
     }
 
     /**
      * Number of remaining games between the two given teams.
      */
     public int against(String team1, String team2) {
-        // TODO implement
-        return 0;
+        return g[teams.get(team1)][teams.get(team2)];
     }
 
     /**
@@ -88,6 +107,15 @@ public class BaseballElimination {
      */
     public static void main(String[] args) {
         BaseballElimination division = new BaseballElimination(args[0]);
+        StdOut.printf("Number of teams = %d%n", division.numberOfTeams());
+        for (String team : division.teams()) {
+            StdOut.printf("%s: %d wins, %d losses, %d remaining%n",
+                    team,
+                    division.wins(team),
+                    division.losses(team),
+                    division.remaining(team));
+        }
+        /*
         for (String team : division.teams()) {
             if (division.isEliminated(team)) {
                 StdOut.print(team + " is eliminated by the supset of R = { ");
@@ -99,6 +127,7 @@ public class BaseballElimination {
                 StdOut.println(team + " is not eliminated");
             }
         }
+        */
     }
 }
 
