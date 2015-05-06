@@ -129,5 +129,40 @@ public class BaseballElimination {
         }
         */
     }
+
+    private FlowNetwork buildFlowNetwork(String teamName) {
+        int team = teams.get(teamName);
+        int v = numberOfTeams() + numberOfMatchups(team) + 1;
+        FlowNetwork net = new FlowNetwork(v);
+        int t = v - 1; // target node
+        int s = t - 1;        // source node
+
+        int c = w[team] + r[team];
+
+        // Connect team nodes to sink
+        for (int i = 0; i < n; ++i) {
+            if (i != team) {
+                net.addEdge(new FlowEdge(i, t, c - w[i]));
+            }
+        }
+
+        // TODO implement
+        return null;
+    }
+
+    private int numberOfMatchups(int team) {
+        int m = 0;
+        for (int i = 0; i < n; ++i) {
+            if (i != team) {
+                for (int j = i + 1; j < n; ++j) {
+                    if (j != team && g[i][j] != 0) {
+                        ++m;
+                    }
+                }
+            }
+        }
+
+        return m;
+    }
 }
 
