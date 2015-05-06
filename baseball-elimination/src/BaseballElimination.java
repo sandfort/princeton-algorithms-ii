@@ -7,6 +7,7 @@ public class BaseballElimination {
     private int[] l;    // losses for each team
     private int[] r;    // remaining games for each team
     private int[][] g;  // remaining games for each team against each other team
+    private FordFulkerson[] results;
     private SeparateChainingHashST<String, Integer> teams;
 
     /**
@@ -27,6 +28,7 @@ public class BaseballElimination {
         this.l = new int[n];
         this.r = new int[n];
         this.g = new int[n][n];
+        this.results = new FordFulkerson[n];
         this.teams = new SeparateChainingHashST<String, Integer>(n);
 
         for (int i = 0; i < n; ++i) {
@@ -59,6 +61,8 @@ public class BaseballElimination {
      * Number of wins for the given team.
      */
     public int wins(String team) {
+        checkTeams(team);
+
         return w[teams.get(team)];
     }
 
@@ -66,6 +70,8 @@ public class BaseballElimination {
      * Number of losses for the given team.
      */
     public int losses(String team) {
+        checkTeams(team);
+
         return l[teams.get(team)];
     }
 
@@ -73,6 +79,8 @@ public class BaseballElimination {
      * Number of remaining games for the given team.
      */
     public int remaining(String team) {
+        checkTeams(team);
+
         return r[teams.get(team)];
     }
 
@@ -80,6 +88,9 @@ public class BaseballElimination {
      * Number of remaining games between the two given teams.
      */
     public int against(String team1, String team2) {
+        checkTeams(team1);
+        checkTeams(team2);
+
         return g[teams.get(team1)][teams.get(team2)];
     }
 
@@ -87,8 +98,22 @@ public class BaseballElimination {
      * Is the given team eliminated?
      */
     public boolean isEliminated(String team) {
-        // TODO implement
-        return false;
+        checkTeams(team);
+
+        int x = teams.get(team);
+
+        if (isTriviallyEliminated(x)) {
+            return true;
+        }
+
+        int max = 0;
+        for (Matchup matchup : matchups(x)) {
+            int team1 = matchup.either();
+            int team2 = matchup.other(team1);
+            max += g[team1][team2];
+        }
+
+        return calculateMaxflow(team).value() < max;
     }
 
     /**
@@ -96,8 +121,24 @@ public class BaseballElimination {
      * <tt>null</tt> if not eliminated.
      */
     public Iterable<String> certificateOfElimination(String team) {
-        // TODO implement
-        return null;
+        if (!isEliminated(team)) {
+            return null;
+        }
+
+        if (isTriviallyEliminated(teams.get(team))) {
+            return trivialCert(team);
+        }
+
+        FordFulkerson ff = calculateMaxflow(team);
+
+        Stack<String> cert = new Stack<String>();
+        for (String other : teams.keys()) {
+            if (ff.inCut(teams.get(other))) {
+                cert.push(other);
+            }
+        }
+
+        return cert;
     }
 
     /**
@@ -107,21 +148,9 @@ public class BaseballElimination {
      */
     public static void main(String[] args) {
         BaseballElimination division = new BaseballElimination(args[0]);
-        StdOut.printf("Number of teams = %d%n", division.numberOfTeams());
-        for (String team : division.teams()) {
-            StdOut.printf("%s: %d wins, %d losses, %d remaining%n",
-                    team,
-                    division.wins(team),
-                    division.losses(team),
-                    division.remaining(team));
-        }
-
-        StdOut.printf("FlowNetwork for %s:%n", args[1]);
-        StdOut.println(division.buildFlowNetwork(args[1]));
-        /*
         for (String team : division.teams()) {
             if (division.isEliminated(team)) {
-                StdOut.print(team + " is eliminated by the supset of R = { ");
+                StdOut.print(team + " is eliminated by the subset of R = { ");
                 for (String t : division.certificateOfElimination(team)) {
                     StdOut.print(t + " ");
                 }
@@ -130,7 +159,6 @@ public class BaseballElimination {
                 StdOut.println(team + " is not eliminated");
             }
         }
-        */
     }
 
     private FlowNetwork buildFlowNetwork(String teamName) {
@@ -182,9 +210,50 @@ public class BaseballElimination {
         return matchups;
     }
 
+    private FordFulkerson calculateMaxflow(String teamName) {
+        int team = teams.get(teamName);
+
+        if (results[team] == null) {
+            FlowNetwork net = buildFlowNetwork(teamName);
+            results[team] = new FordFulkerson(net, net.V()-2, net.V()-1);
+        }
+
+        return results[team];
+    }
+
+    private boolean isTriviallyEliminated(int x) {
+        for (int i = 0; i < n; ++i) {
+            if (i != x && w[x] + r[x] < w[i]) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private Iterable<String> trivialCert(String team) {
+        Stack<String> cert = new Stack<String>();
+
+        int x = teams.get(team);
+        for (String other : teams.keys()) {
+            if (!other.equals(team) && w[x] + r[x] < w[teams.get(other)]) {
+                cert.push(other);
+                return cert;
+            }
+        }
+
+        return null;
+    }
+
+    private void checkTeams(String team) {
+        if (!teams.contains(team)) {
+            throw new IllegalArgumentException(team + " is not a valid team.");
+        }
+    }
+
     private class Matchup {
-        int team1;
-        int team2;
+        private int team1;
+        private int team2;
 
         public Matchup(int team1, int team2) {
             if (team1 < 0 || team2 < 0 || team1 == team2) {
