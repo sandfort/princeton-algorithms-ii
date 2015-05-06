@@ -115,6 +115,9 @@ public class BaseballElimination {
                     division.losses(team),
                     division.remaining(team));
         }
+
+        StdOut.printf("FlowNetwork for %s:%n", args[1]);
+        StdOut.println(division.buildFlowNetwork(args[1]));
         /*
         for (String team : division.teams()) {
             if (division.isEliminated(team)) {
@@ -132,10 +135,11 @@ public class BaseballElimination {
 
     private FlowNetwork buildFlowNetwork(String teamName) {
         int team = teams.get(teamName);
-        int v = numberOfTeams() + numberOfMatchups(team) + 1;
+        Queue<Matchup> matchups = matchups(team);
+        int v = n + matchups.size() + 2;
         FlowNetwork net = new FlowNetwork(v);
-        int t = v - 1; // target node
-        int s = t - 1;        // source node
+        int t = v - 1;  // target node
+        int s = t - 1;  // source node
 
         int c = w[team] + r[team];
 
@@ -146,23 +150,62 @@ public class BaseballElimination {
             }
         }
 
-        // TODO implement
-        return null;
+        int i = n;
+        for (Matchup matchup : matchups) {
+            int team1 = matchup.either();
+            int team2 = matchup.other(team1);
+
+            // Connect game node to team nodes
+            net.addEdge(new FlowEdge(i, team1, Double.POSITIVE_INFINITY));
+            net.addEdge(new FlowEdge(i, team2, Double.POSITIVE_INFINITY));
+
+            // Connect source node to game nodes
+            net.addEdge(new FlowEdge(s, i++, g[team1][team2]));
+        }
+
+        return net;
     }
 
-    private int numberOfMatchups(int team) {
-        int m = 0;
+    private Queue<Matchup> matchups(int team) {
+        Queue<Matchup> matchups = new Queue<Matchup>();
+
         for (int i = 0; i < n; ++i) {
             if (i != team) {
                 for (int j = i + 1; j < n; ++j) {
                     if (j != team && g[i][j] != 0) {
-                        ++m;
+                        matchups.enqueue(new Matchup(i, j));
                     }
                 }
             }
         }
 
-        return m;
+        return matchups;
+    }
+
+    private class Matchup {
+        int team1;
+        int team2;
+
+        public Matchup(int team1, int team2) {
+            if (team1 < 0 || team2 < 0 || team1 == team2) {
+                throw new IllegalArgumentException();
+            }
+
+            this.team1 = team1;
+            this.team2 = team2;
+        }
+
+        public int either() {
+            return team1;
+        }
+
+        public int other(int one) {
+            if (one == team1) {
+                return team2;
+            }
+
+            return team1;
+        }
     }
 }
 
