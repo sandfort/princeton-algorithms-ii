@@ -21,8 +21,8 @@ public class BoggleSolver {
      * <tt>Iterable</tt>.
      */
     public Iterable<String> getAllValidWords(BoggleBoard board) {
-        // TODO implement
-        return new Stack<String>();
+        SET<String> words = new SET<String>();
+
     }
 
     /**
@@ -64,6 +64,32 @@ public class BoggleSolver {
             score += solver.scoreOf(word);
         }
         StdOut.println("Score = " + score);
+    }
+
+    // I hate this method.
+    private Iterable<Tile> adj(BoggleBoard board, int i, int j) {
+        Stack<Tile> adj = new Stack<Tile>();
+        if (i > 0) {
+            adj.push(new Tile(i - 1, j));
+            if (j > 0) adj.push(new Tile(i - 1, j - 1));
+            if (j < board.cols() - 1) adj.push(new Tile(i - 1, j + 1));
+        }
+        if (i < board.rows() - 1) {
+            adj.push(new Tile(i + 1, j));
+            if (j > 0) adj.push(new Tile(i + 1, j - 1));
+            if (j < board.cols() - 1) adj.push(new Tile(i + 1, j + 1));
+        }
+        if (j > 0) adj.push(new Tile(i, j - 1));
+        if (j < board.cols() - 1) adj.push(new Tile(i, j + 1));
+        return adj;
+    }
+
+    private class Tile {
+        public int i, j;
+        public Tile(int i, int j) {
+            this.i = i;
+            this.j = j;
+        }
     }
 }
 
