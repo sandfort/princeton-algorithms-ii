@@ -16,6 +16,33 @@ public class BoggleSolver {
         }
     }
 
+    public SET<String> dfs(BoggleBoard board, int i, int j) {
+        Tile s = new Tile(i, j);
+        boolean[][] marked = new boolean[board.rows()][board.cols()];
+        return dfs(board, s, "" + board.getLetter(i, j), marked);
+    }
+
+    public SET<String> dfs(BoggleBoard g, Tile v, String prefix,
+            boolean[][] marked) {
+        marked[v.i][v.j] = true;
+        SET<String> words = new SET<String>();
+
+        if (dict.contains(prefix) && prefix.length() > 2) {
+            words.add(prefix);
+        }
+
+        for (Tile w : adj(g, v)) {
+            if (!marked[w.i][w.j]) {
+                String word = prefix + g.getLetter(w.i, w.j);
+                words = words.union(dfs(g, w, word, marked));
+            }
+        }
+
+        marked[v.i][v.j] = false;
+
+        return words;
+    }
+
     /**
      * Return the set of all valid words in the given Boggle board as an
      * <tt>Iterable</tt>.
@@ -23,6 +50,13 @@ public class BoggleSolver {
     public Iterable<String> getAllValidWords(BoggleBoard board) {
         SET<String> words = new SET<String>();
 
+        for (int i = 0; i < board.rows(); ++i) {
+            for (int j = 0; j < board.cols(); ++j) {
+                words = words.union(dfs(board, i, j));
+            }
+        }
+
+        return words;
     }
 
     /**
@@ -32,27 +66,20 @@ public class BoggleSolver {
      * @param word A word containing only uppercase letters A through Z.
      */
     public int scoreOf(String word) {
-        if (!dict.contains(word)) {
-            return 0;
-        }
-
+        if (!dict.contains(word)) return 0;
         int len = word.length();
-
-        if (len < 3) {
-            return 0;
-        } else if (len < 5) {
-            return 0;
-        } else if (len == 5) {
-            return 3;
-        } else if (len == 6) {
-            return 3;
-        } else if (len == 7) {
-            return 5;
-        }
-
+        if      (len <  3) return 0;
+        else if (len <  5) return 1;
+        else if (len == 5) return 2;
+        else if (len == 6) return 3;
+        else if (len == 7) return 5;
         return 11;
     }
 
+    /**
+     * args[0] - dictionary
+     * args[1] - board
+     */
     public static void main(String args[]) {
         In in = new In(args[0]);
         String[] dictionary = in.readAllStrings();
@@ -64,6 +91,10 @@ public class BoggleSolver {
             score += solver.scoreOf(word);
         }
         StdOut.println("Score = " + score);
+    }
+
+    private Iterable<Tile> adj(BoggleBoard board, Tile tile) {
+        return adj(board, tile.i, tile.j);
     }
 
     // I hate this method.
