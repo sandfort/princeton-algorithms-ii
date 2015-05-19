@@ -1,6 +1,5 @@
 public class BoggleSolver {
-    // TODO replace this SET with a data structure that supports prefix search
-    private SET<String> dict;
+    private Dictionary dict;
 
     /**
      * Initialize the data structure using the given array of strings as the
@@ -10,7 +9,7 @@ public class BoggleSolver {
      * letters A through Z.
      */
     public BoggleSolver(String[] dictionary) {
-        this.dict = new SET<String>();
+        this.dict = new Dictionary();
         for (String word : dictionary) {
             this.dict.add(word);
         }
@@ -27,14 +26,16 @@ public class BoggleSolver {
         marked[v.i][v.j] = true;
         SET<String> words = new SET<String>();
 
-        if (dict.contains(prefix) && prefix.length() > 2) {
+        if (dict.containsWord(prefix) && prefix.length() > 2) {
             words.add(prefix);
         }
 
         for (Tile w : adj(g, v)) {
             if (!marked[w.i][w.j]) {
                 String word = prefix + g.getLetter(w.i, w.j);
-                words = words.union(dfs(g, w, word, marked));
+                if (dict.containsPrefix(word)) {
+                    words = words.union(dfs(g, w, word, marked));
+                }
             }
         }
 
@@ -66,7 +67,7 @@ public class BoggleSolver {
      * @param word A word containing only uppercase letters A through Z.
      */
     public int scoreOf(String word) {
-        if (!dict.contains(word)) return 0;
+        if (!dict.containsWord(word)) return 0;
         int len = word.length();
         if      (len <  3) return 0;
         else if (len <  5) return 1;
