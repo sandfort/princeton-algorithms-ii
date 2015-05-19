@@ -30,9 +30,14 @@ public class BoggleSolver {
             words.add(prefix);
         }
 
+        if (prefix.charAt(prefix.length()-1) == 'Q') {
+            words = words.union(dfs(g, v, prefix + 'U', marked));
+        }
+
         for (Tile w : adj(g, v)) {
             if (!marked[w.i][w.j]) {
-                String word = prefix + g.getLetter(w.i, w.j);
+                char letter = g.getLetter(w.i, w.j);
+                String word = prefix + letter;
                 if (dict.containsPrefix(word)) {
                     words = words.union(dfs(g, w, word, marked));
                 }
