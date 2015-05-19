@@ -15,23 +15,23 @@ public class BoggleSolver {
         }
     }
 
-    public SET<String> dfs(BoggleBoard board, int i, int j) {
+    private SET<String> dfs(BoggleBoard board, int i, int j) {
         Tile s = new Tile(i, j);
         boolean[][] marked = new boolean[board.rows()][board.cols()];
         return dfs(board, s, "" + board.getLetter(i, j), marked);
     }
 
-    public SET<String> dfs(BoggleBoard g, Tile v, String prefix,
+    private SET<String> dfs(BoggleBoard g, Tile v, String prefix,
             boolean[][] marked) {
         marked[v.i][v.j] = true;
         SET<String> words = new SET<String>();
 
-        if (dict.containsWord(prefix) && prefix.length() > 2) {
-            words.add(prefix);
+        if (prefix.charAt(prefix.length()-1) == 'Q') {
+            prefix += 'U';
         }
 
-        if (prefix.charAt(prefix.length()-1) == 'Q') {
-            words = words.union(dfs(g, v, prefix + 'U', marked));
+        if (dict.containsWord(prefix) && prefix.length() > 2) {
+            words.add(prefix);
         }
 
         for (Tile w : adj(g, v)) {
