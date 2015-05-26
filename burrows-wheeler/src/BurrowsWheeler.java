@@ -4,8 +4,23 @@ public class BurrowsWheeler {
      * to standard output.
      */
     public static void encode() {
-        // TODO implement
-        StdOut.println("Encode not yet implemented.");
+        StringBuilder sb = new StringBuilder();
+        while (!BinaryStdIn.isEmpty()) sb.append(BinaryStdIn.readChar());
+        String s = sb.toString();
+        CircularSuffixArray csa = new CircularSuffixArray(s);
+        int i = 0;
+        while (csa.index(i) != 0) ++i;
+        BinaryStdOut.write(i);
+        for (i = 0; i < csa.length(); ++i) {
+            if (csa.index(i) == 0) {
+                BinaryStdOut.write(s.charAt(csa.length()-1));
+            } else {
+                BinaryStdOut.write(s.charAt(csa.index(i)-1));
+            }
+        }
+
+        BinaryStdOut.flush();
+        BinaryStdOut.close();
     }
 
     /**
