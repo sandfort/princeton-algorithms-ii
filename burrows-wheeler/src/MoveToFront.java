@@ -4,8 +4,24 @@ public class MoveToFront {
      * standard output.
      */
     public static void encode() {
-        // TODO implement
-        StdOut.println("Encode not yet implemented.");
+        int r = 256;
+        char[] seq = new char[r];
+        for (int i = 0; i < r; ++i) {
+            seq[i] = (char) i;
+        }
+
+        char c;
+        while (!BinaryStdIn.isEmpty()) {
+            c = BinaryStdIn.readChar();
+            int i = 0;
+            while (seq[i] != c) ++i;
+            BinaryStdOut.write((char) i);
+            while (i > 0) seq[i] = seq[--i];
+            seq[0] = c;
+        }
+
+        BinaryStdOut.flush();
+        BinaryStdOut.close();
     }
 
     /**
@@ -13,8 +29,23 @@ public class MoveToFront {
      * standard output.
      */
     public static void decode() {
-        // TODO implement
-        StdOut.println("Decode not yet implemented.");
+        int r = 256;
+        char[] seq = new char[r];
+        for (int i = 0; i < r; ++i) {
+            seq[i] = (char) i;
+        }
+
+        int i;
+        while (!BinaryStdIn.isEmpty()) {
+            i = (int) BinaryStdIn.readChar();
+            char c = seq[i];
+            BinaryStdOut.write(c);
+            while (i > 0) seq[i] = seq[--i];
+            seq[0] = c;
+        }
+
+        BinaryStdOut.flush();
+        BinaryStdOut.close();
     }
 
     public static void main(String[] args) {
