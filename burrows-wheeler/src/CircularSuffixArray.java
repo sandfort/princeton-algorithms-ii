@@ -24,19 +24,6 @@ public class CircularSuffixArray {
         Arrays.sort(index, new SuffixComparator(s));
     }
 
-    public static void main(String[] args) {
-        CircularSuffixArray csa = new CircularSuffixArray("ABRACADABRA!");
-        StdOut.println("Original Suffixes:");
-        for (int i = 0; i < csa.length(); ++i) {
-            StdOut.println(csa.suffix(i));
-        }
-        StdOut.println();
-        StdOut.println("Sorted Suffixes:");
-        for (Integer i : csa.index) {
-            StdOut.println(csa.suffix(i));
-        }
-    }
-
     /**
      * Return the length of the string <tt>s</tt>.
      */
@@ -54,13 +41,6 @@ public class CircularSuffixArray {
      */
     public int index(int i) {
         return index[i];
-    }
-
-    /**
-     * For testing purposes only.
-     */
-    private String suffix(int i) {
-        return s.substring(i, n) + s.substring(0, i);
     }
 
     private class SuffixComparator implements Comparator<Integer> {
