@@ -20,7 +20,7 @@ public class MoveToFront {
             seq[0] = c;
         }
 
-        BinaryStdOut.flush();
+        BinaryStdIn.close();
         BinaryStdOut.close();
     }
 
@@ -44,7 +44,7 @@ public class MoveToFront {
             seq[0] = c;
         }
 
-        BinaryStdOut.flush();
+        BinaryStdIn.close();
         BinaryStdOut.close();
     }
 
@@ -53,8 +53,6 @@ public class MoveToFront {
             encode();
         } else if (args[0].equals("+")) {
             decode();
-        } else {
-            StdOut.println("Usage: - to encode, + to decode.");
         }
     }
 }

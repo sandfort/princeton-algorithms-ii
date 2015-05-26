@@ -19,7 +19,7 @@ public class BurrowsWheeler {
             }
         }
 
-        BinaryStdOut.flush();
+        BinaryStdIn.close();
         BinaryStdOut.close();
     }
 
@@ -36,7 +36,6 @@ public class BurrowsWheeler {
         Arrays.sort(s);
 
         int[] next = new int[n];
-        char[][] suffixes = new char[n][n];
 
         int i = 0;
         int j = 0;
@@ -48,14 +47,15 @@ public class BurrowsWheeler {
             else ++j;
         }
 
-        // reconstruct the string
-        BinaryStdOut.write(s[first]);
-        i = next[first];
-        while (i != first) {
+        i = first;
+        j = 0;
+        while (j < n) {
             BinaryStdOut.write(s[i]);
             i = next[i];
+            ++j;
         }
-        BinaryStdOut.flush();
+
+        BinaryStdIn.close();
         BinaryStdOut.close();
     }
 
@@ -64,8 +64,6 @@ public class BurrowsWheeler {
             encode();
         } else if (args[0].equals("+")) {
             decode();
-        } else {
-            StdOut.println("Usage: - to encode, + to decode.");
         }
     }
 }
